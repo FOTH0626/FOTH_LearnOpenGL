@@ -15,3 +15,4 @@ add_executable(LearnOpenGL
 
 target_link_libraries(LearnOpenGL glfw)
 target_include_directories(LearnOpenGL PRIVATE External/glad/include)
+target_include_directories(LearnOpenGL PRIVATE External/glm)
