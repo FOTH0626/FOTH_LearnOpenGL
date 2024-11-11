@@ -13,16 +13,68 @@
 #include <iostream>
 
 #include "shader.h"
+#include "camera.h"
+
+
+int screen_width = 800;
+int screen_height = 600;
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+float lastX = screen_width / 2.0f;
+float lastY = screen_height / 2.0f;
+bool firstMouse = true;
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
+
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0,0,width,height);
 }
 
-void processInput(GLFWwindow* window) {
+void mouse_callback(GLFWwindow* window, double xPosIn, double yPosIn) {
+    float xpos = static_cast<float>(xPosIn);
+    float ypos = static_cast<float>(yPosIn);
+
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+
+    lastX = xpos;
+    lastY = ypos;
+
+    camera.ProcessMouseMovement(xoffset,yoffset);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
+
+void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        camera.ProcessKeyboard(FORWARD, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        camera.ProcessKeyboard(BACKWARD, deltaTime);
+    }
+    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        camera.ProcessKeyboard(LEFT, deltaTime);
+    }
+    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        camera.ProcessKeyboard(RIGHT, deltaTime);
+    }
+
 }
+
 
 float vertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -115,8 +167,8 @@ glm::vec3 cubePositions[] = {
   glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
-int screen_width = 800;
-int screen_height = 600;
+
+
 int main() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -131,6 +183,10 @@ int main() {
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
         std::cout << "Failed to initialize GLAD" << std::endl;
@@ -161,45 +217,8 @@ int main() {
     // glEnableVertexAttribArray(2);
     // Texture
     auto texture1 = loadTexture("../Texture/container.jpg", GL_RGB);
-    // unsigned int texture1;
-    // glGenTextures(1, &texture1);
-    // glBindTexture(GL_TEXTURE_2D, texture1);
-    // //
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //
-    // int texture_width, texture_height, texture_nrChannels;
-    // stbi_set_flip_vertically_on_load(true);
-    // unsigned char *data = stbi_load("../Texture/container.jpg", &texture_width, &texture_height, &texture_nrChannels, 0);
-    // if (data) {
-    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    //     glGenerateMipmap(GL_TEXTURE_2D);
-    // }else {
-    //     std::cerr << "Failed to load texture" << std::endl;
-    // }
-    // stbi_image_free(data);
     auto texture2 = loadTexture("../Texture/awesomeface.png", GL_RGBA);
-    // unsigned int texture2;
-    //
-    // glGenTextures(1, &texture2);
-    // glBindTexture(GL_TEXTURE_2D, texture2);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //
-    // data = stbi_load("../Texture/awesomeface.png", &texture_width, &texture_height, &texture_nrChannels, 0);
-    //
-    // if (data) {
-    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_width, texture_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    //     glGenerateMipmap(GL_TEXTURE_2D);
-    // }else {
-    //     std::cerr << "Failed to load texture" << std::endl;
-    // }
-    // stbi_image_free(data);
-    //
+
     ourShader.use();
     // ourShader.setInt("texture", 0);
     // ourShader.setInt("texture2", 1);
@@ -209,7 +228,13 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
 
+
+
     while (!glfwWindowShouldClose(window)) {
+
+        auto currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
 
         processInput(window);
 
@@ -225,15 +250,16 @@ int main() {
 
         // auto model = glm::mat4(1.f);
         // model = glm::rotate(model, static_cast<float>(glfwGetTime())*glm::radians(50.f), glm::vec3(.5f,1.f,0.f));
+        // auto view = glm::mat4(1.0f);
+        // view = glm::lookAt(cameraPos, cameraPos + cameraDirection, cameraUp);
 
-        auto view = glm::mat4(1.f);
-        view = glm::translate(view, glm::vec3(0.f,0.f,-3.f));
-        ourShader.setMat4("view", view);
 
         glm::mat4 projection;
-        projection = glm::perspective(glm::radians(45.f), static_cast<float>(screen_width)/static_cast<float>(screen_height), 0.1f, 100.f);
+        projection = glm::perspective(glm::radians(camera.Zoom), static_cast<float>(screen_width)/static_cast<float>(screen_height), 0.1f, 100.f);
         ourShader.setMat4("projection", projection);
 
+        glm::mat4 view = camera.GetViewMatrix();
+        ourShader.setMat4("view", view);
 
        //  auto trans = glm::mat4(1.0f);
        //  trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
@@ -267,3 +293,4 @@ int main() {
     return 0;
 
 }
+
