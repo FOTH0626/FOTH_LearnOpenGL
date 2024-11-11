@@ -10,7 +10,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
 #include <iostream>
 
 #include "shader.h"
@@ -69,10 +68,10 @@ float vertices[] = {
     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
-unsigned int  indices[] = {
-    0, 1, 3,
-    1, 2, 3
-};
+// unsigned int  indices[] = {
+//     0, 1, 3,
+//     1, 2, 3
+// };
 
 float texCoords[] = {
     0.0f, 0.0f,   // 左下
@@ -102,6 +101,19 @@ unsigned int  loadTexture(const char* name, int color ) {
     stbi_image_free(data);
     return texture;
 }
+
+glm::vec3 cubePositions[] = {
+  glm::vec3( 0.0f,  0.0f,  0.0f),
+  glm::vec3( 2.0f,  5.0f, -15.0f),
+  glm::vec3(-1.5f, -2.2f, -2.5f),
+  glm::vec3(-3.8f, -2.0f, -12.3f),
+  glm::vec3( 2.4f, -0.4f, -3.5f),
+  glm::vec3(-1.7f,  3.0f, -7.5f),
+  glm::vec3( 1.3f, -2.0f, -2.5f),
+  glm::vec3( 1.5f,  2.0f, -2.5f),
+  glm::vec3( 1.5f,  0.2f, -1.5f),
+  glm::vec3(-1.3f,  1.0f, -1.5f)
+};
 
 int screen_width = 800;
 int screen_height = 600;
@@ -211,18 +223,17 @@ int main() {
 
         ourShader.use();
 
-        auto model = glm::mat4(1.f);
-        model = glm::rotate(model, static_cast<float>(glfwGetTime())*glm::radians(50.f), glm::vec3(.5f,1.f,0.f));
+        // auto model = glm::mat4(1.f);
+        // model = glm::rotate(model, static_cast<float>(glfwGetTime())*glm::radians(50.f), glm::vec3(.5f,1.f,0.f));
 
         auto view = glm::mat4(1.f);
         view = glm::translate(view, glm::vec3(0.f,0.f,-3.f));
+        ourShader.setMat4("view", view);
 
         glm::mat4 projection;
-        projection = glm::perspective(glm::radians(45.f), static_cast<float>(screen_width)/screen_height, 0.1f, 100.f);
-        auto mvp = projection * view * model;
+        projection = glm::perspective(glm::radians(45.f), static_cast<float>(screen_width)/static_cast<float>(screen_height), 0.1f, 100.f);
+        ourShader.setMat4("projection", projection);
 
-        int mvpLoc = glGetUniformLocation(ourShader.ID, "mvp");
-        glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
 
        //  auto trans = glm::mat4(1.0f);
        //  trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
@@ -232,8 +243,17 @@ int main() {
        //  glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
         glBindVertexArray(VAO);
+        for (unsigned int i = 0; i <10; i++) {
+          auto model = glm::mat4(1.0f);
+          model = glm::translate(model, cubePositions[i]);
+          float angle = i * 20.0f;
+          model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+          ourShader.setMat4("model", model);
+
+          glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        // glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
